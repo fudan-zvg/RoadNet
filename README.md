@@ -8,7 +8,24 @@
 > Renyuan Peng, Xinyue Cai, Hang Xu, Jiachen Lu, Feng Wen, Wei Zhang, [Li Zhang](https://lzrobots.github.io)  
 > **Fudan University, Huawei Noah’s Ark Lab**
 
+## Get Started
+Please checkout for [get_started.md](get_started.md)
+## Training
+For ICCV: Translating Images to Road Network: A Non-Autoregressive Sequence-to-Sequence Approach
+```
+./tools/dist_train.sh projects/RoadNetwork/configs/rntr_ar_roadseg/lss_ar_rntr_changeloss_test_fp16_torch2.py 8
+```
+For AAAI: LaneGraph2Seq: Lane Topology Extraction with Language Model via Vertex-Edge Encoding and Connectivity Enhancement
+```
+./tools/dist_train.sh projects/RoadNetwork/configs/lanegraph2seq/langraph2seq_fp16_torch2.py 8
+```
 
+## Acknowledgements
+We thank numerous excellent works and open-source codebases:
+- [MMDetection3D](https://github.com/open-mmlab/mmdetection3d)
+- [PETR](https://github.com/megvii-research/PETR)
+- [DETR3D](https://github.com/WangYueFt/detr3d)
+- [BEVDet](https://github.com/HuangJunJie2017/BEVDet)
 
 ## 📜 BibTex
 
