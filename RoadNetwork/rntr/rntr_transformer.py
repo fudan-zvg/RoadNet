@@ -1143,7 +1143,8 @@ class RNTR2MultiheadAttention(BaseModule):
             key=key,
             value=value,
             is_causal=is_causal, 
-            need_weights=False
+            need_weights=False,
+            attn_mask=attn_mask
             )[0]
 
         if self.batch_first:

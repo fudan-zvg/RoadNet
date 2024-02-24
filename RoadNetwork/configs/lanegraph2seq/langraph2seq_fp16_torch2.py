@@ -50,7 +50,7 @@ ida_aug_conf = {
 }
 
 model = dict(
-    type='LssPryBzSeqEgoChangeloss',
+    type='AR_LG2Seq',
     use_grid_mask=False,
     freeze_pretrain=False,
     img_backbone=dict(
@@ -76,10 +76,10 @@ model = dict(
     # vis_cfg=dict(path='val_lss_prycon_l6_256_150'),
     data_aug_conf=ida_aug_conf,
     pts_bbox_head=dict(
-        type='LssPryBzSeqHead',
+        type='ARLanegraph2seqHead',
         num_classes=10,
         in_channels=transformer_dims,
-        max_center_len=601,
+        max_center_len=602,
         num_center_classes=num_center_classes,
         embed_dims=transformer_dims,
         num_query=900,
@@ -136,14 +136,8 @@ model = dict(
                      type='PositionEmbeddingSineBEV',
                      num_feats=transformer_dims//2,
                      normalize=True),
-        loss_coords=dict(
+        loss_seq=dict(
             type='mmdet.CrossEntropyLoss'),
-        loss_labels=dict(
-            type='mmdet.CrossEntropyLoss', class_weight=label_class_weight),
-        loss_connects=dict(
-            type='mmdet.CrossEntropyLoss', class_weight=connect_class_weight), 
-        loss_coeffs=dict(
-            type='mmdet.CrossEntropyLoss')
             ),
     # model training and testing settings
     train_cfg=dict(
@@ -203,13 +197,12 @@ train_pipeline = [
     dict(type='LoadNusClearOrderedBzCenterline', grid_conf=grid_conf, bz_grid_conf=bz_grid_conf, clear=True),
     dict(type='CenterlineFlip', prob=0.5),
     dict(type='CenterlineRotateScale', prob=0.5, max_rotate_degree=22.5, scaling_ratio_range=(0.95, 1.05)),
-    dict(type='TransformOrderedBzLane2Graph', n_control=3, orderedDFS=True),
+    dict(type='TransformLaneGraph', n_control=3, orderedDFS=True),
     dict(type='Pack3DDetInputs', 
          keys=['img'], 
          meta_keys=('filename', 'ori_shape', 'img_shape', 'lidar2img', 'intrinsics', 'extrinsics',
                 'pad_shape', 'scale_factor', 'flip', 'box_mode_3d', 'box_type_3d',
-                'img_norm_cfg', 'sample_idx', 'timestamp', 'centerline_coord', 'centerline_label', 
-                'centerline_connect', 'centerline_coeff', 'centerline_sequence', 'lidar2ego', 'n_control')),
+                'img_norm_cfg', 'sample_idx', 'timestamp', 'vert_sentence', 'edge_sentence', 'lidar2ego', 'n_control')),
 ]
 test_pipeline = [
     dict(type='OrgLoadMultiViewImageFromFiles', to_float32=True),
@@ -217,17 +210,17 @@ test_pipeline = [
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PadMultiViewImage', size_divisor=32),
     dict(type='LoadNusClearOrderedBzCenterline', grid_conf=grid_conf, bz_grid_conf=bz_grid_conf, clear=True),
-    dict(type='TransformOrderedBzLane2Graph', n_control=3, orderedDFS=True),
+    dict(type='TransformLaneGraph', n_control=3, orderedDFS=True),
     dict(type='Pack3DDetInputs', keys=['img'], 
          meta_keys=('filename', 'ori_shape', 'img_shape', 'lidar2img', 'intrinsics', 'extrinsics',
                 'pad_shape', 'scale_factor', 'flip', 'box_mode_3d', 'box_type_3d',
-                'img_norm_cfg', 'sample_idx', 'timestamp', 'centerline_coord', 'centerline_label', 
-                'centerline_connect', 'centerline_coeff', 'centerline_sequence', 'lidar2ego', 'n_control'))
+                'img_norm_cfg', 'sample_idx', 'timestamp', 'timestamp', 'vert_sentence', 'edge_sentence', 'lidar2ego', 'n_control'))
 ]
 
 train_dataloader = dict(
     batch_size=2,
     num_workers=4,  # 4
+    persistent_workers=False,
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -251,6 +244,7 @@ train_dataloader = dict(
         bz_grid_conf=bz_grid_conf,
         ))
 test_dataloader = dict(
+    persistent_workers=False,
     dataset=dict(
         type=dataset_type, 
         pipeline=test_pipeline, 
@@ -269,6 +263,7 @@ test_dataloader = dict(
         grid_conf=grid_conf,
         bz_grid_conf=bz_grid_conf))
 val_dataloader = dict(
+    persistent_workers=False,
     dataset=dict(
         type=dataset_type, 
         pipeline=test_pipeline, 

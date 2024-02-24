@@ -754,6 +754,49 @@ def sentance2bzseq(sentance, pc_range, dx, bz_pc_range, bz_nx):
     return  seq
 
 
+def nodesbetween2seq(graph_nodes, graph_betweens, pc_range, dx, bz_pc_range, bz_nx, vertex_id_start=200, connect_start=250, coeff_start=300):
+    """ for each node, seq: x, y, cls, IDX
+    if type == start or continue , IDX = 0"""
+    type_idx_map = {'start':0, 'continue':1, 'fork':2, 'merge':3}
+    vert_seq = []
+    edge_seq = []
+    count = 0
+    num_subgraph = len(graph_nodes)
+    for sgi in range(num_subgraph):
+        graph_node = graph_nodes[sgi]
+        graph_between = graph_betweens[sgi]
+        graph_between_list = list(graph_between.keys())
+        parents_list = [e[0] for e in graph_between_list]
+        for node in graph_node:
+            vert_idx = node.sque_index + sgi
+            node_position = (node.position - pc_range[:3]) / dx
+            vert_seq.append((vert_idx, int(node_position[0]), int(node_position[1])))
+
+        for node in graph_node:
+            node_idx = node.sque_index
+            edges = []
+            for pi, parents_idx in enumerate(parents_list):
+                if parents_idx == node_idx:
+                    child_idx = graph_between_list[pi][1]
+                    coeff = graph_between[(parents_idx, child_idx)]
+                    coeff = (coeff - bz_pc_range[:2]) / dx[:2]
+                    coeff[0] = np.clip(coeff[0], 0, bz_nx[0]-1)
+                    coeff[1] = np.clip(coeff[1], 0, bz_nx[1]-1)
+                    edges.append((child_idx + sgi + vertex_id_start, int(coeff[0])+coeff_start, int(coeff[1])+coeff_start))
+            edge_seq.append(edges)
+    vert_sentence = []
+    edge_sentence = []
+    for vert_cl in vert_seq:
+        vert_sentence.extend(list(vert_cl[1:]))
+    for edge_cl in edge_seq:
+        edge_subsen = []
+        for edge_clcl in edge_cl:
+            edge_subsen.extend(list(edge_clcl))
+        edge_subsen.append(connect_start)
+        edge_sentence.extend(edge_subsen)
+    return vert_sentence, edge_sentence
+
+
 def sentance2bzseq2(sentance, pc_range, dx, bz_pc_range, bz_nx):
     """ 
     use round in sequentialization

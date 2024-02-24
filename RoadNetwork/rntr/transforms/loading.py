@@ -13,11 +13,12 @@ from einops import rearrange
 from mmdet.datasets.transforms import LoadAnnotations
 from .depth_map_utils import fill_in_multiscale
 
-from .centerline_utils import SceneGraph, sentance2seq, sentance2bzseq, sentance2bzseq2
-from projects.RNTR.rntr.core.centerline import PryCenterLine, PryOrederedCenterLine, OrderedSceneGraph, PryOrederedBzCenterLine, OrderedBzLaneGraph, OrderedBzSceneGraph, OrderedBzPlSceneGraph, PryOrederedBzPlCenterLine, get_semiAR_seq, match_keypoints, float2int, get_semiAR_seq_fromInt, PryMonoOrederedBzCenterLine, PryMonoOrederedBzPlCenterLine, AV2OrederedBzCenterLine, AV2OrderedBzSceneGraph, AV2OrderedBzLaneGraph, AV2OrederedBzCenterLine_new, AV2OrderedBzSceneGraph_new, NusClearOrederedBzCenterLine
+from .centerline_utils import SceneGraph, sentance2seq, sentance2bzseq, sentance2bzseq2, nodesbetween2seq
+from projects.RNTR.rntr.core.centerline import PryCenterLine, PryOrederedCenterLine, OrderedSceneGraph, PryOrederedBzCenterLine, OrderedBzLaneGraph, OrderedBzSceneGraph, OrderedBzPlSceneGraph, PryOrederedBzPlCenterLine, get_semiAR_seq, match_keypoints, float2int, get_semiAR_seq_fromInt, PryMonoOrederedBzCenterLine, PryMonoOrederedBzPlCenterLine, AV2OrederedBzCenterLine, AV2OrderedBzSceneGraph, AV2OrderedBzLaneGraph, AV2OrederedBzCenterLine_new, AV2OrderedBzSceneGraph_new, NusClearOrederedBzCenterLine, Laneseq2Graph
 from projects.RNTR.rntr.core.centerline import seq2nodelist, EvalMapGraph, seq2bznodelist, EvalMapBzGraph, EvalMapBzPlGraph, convert_coeff_coord, seq2bzplnodelist, convert_plcoeff_coord
-import tools.dataset_converters.utils.nusc_utils as nusc_utils
 
+LOCATIONS = ['boston-seaport', 'singapore-onenorth', 'singapore-queenstown',
+             'singapore-hollandvillage']
 
 @TRANSFORMS.register_module()
 class OrgLoadMultiViewImageFromFiles(object):
@@ -540,6 +541,62 @@ class TransformOrderedBzLane2Graph(object):
         results['centerline_label'] = centerline_label
         results['centerline_connect'] = centerline_connect
         results['centerline_coeff'] = centerline_coeff
+        results['n_control'] = self.n_control
+
+        # # visulization
+        # gt_nodelist = seq2bznodelist(centerline_sequence, self.n_control)
+        # gt_nodelist = convert_coeff_coord(gt_nodelist, centerlines.pc_range, centerlines.dx, centerlines.bz_pc_range, centerlines.bz_dx)
+        # gt_nodegraph = EvalMapBzGraph(results['sample_idx'], gt_nodelist)
+        # img_name = results['img_filename'][0].split('/')[-1].split('.jpg')[0]
+        # gt_nodegraph.visualization(centerlines.nx, 'sweep_sync', 'aug', img_name, scale=5)
+
+        # TODO: delete it!!!
+        # raw_centerlines = results['raw_center_lines']
+        # nodes, nodes_adj = raw_centerlines.export_node_adj()  # get nodes and adj
+        # raw_centerlines.sub_graph_split()  # split sub graph
+        # scene_graph = SceneGraph(raw_centerlines.subgraphs_nodes, raw_centerlines.subgraphs_adj, raw_centerlines.subgraphs_points_in_between_nodes)  # subgraph dfs already
+        # scene_sentance, scene_sentance_list = scene_graph.sequelize_new()
+        # centerline_sequence = sentance2seq(scene_sentance_list)
+        # # results['sequence'] = centerline_sequence
+        # if len(centerline_sequence) % 4 != 0:
+        #     centerline_sequence = centerline_sequence[:(centerline_sequence//4*4)]
+        # gt_nodelist = seq2nodelist(centerline_sequence)
+        # gt_nodegraph = MapGraph(results['sample_idx'], gt_nodelist)
+        # img_name = results['filename'][0].split('/')[-1].split('.jpg')[0]
+        # gt_nodegraph.visulization('aug_centerline', 'raw', img_name, scale=5)
+        return results
+
+
+
+@TRANSFORMS.register_module()
+class TransformLaneGraph(object):
+    def __init__(self, n_control=3, orderedDFS=True, vertex_id_start=200, connect_start=250, coeff_start=300):
+        self.order = orderedDFS
+        self.n_control = n_control
+        self.vertex_id_start = vertex_id_start
+        self.connect_start = connect_start
+        self.coeff_start = coeff_start
+
+    def __call__(self, results):
+        centerlines = results['center_lines']
+        nodes, nodes_adj = centerlines.export_node_adj()  # get nodes and adj
+        centerlines.sub_graph_split()  # split sub graph
+        scene_graph = Laneseq2Graph(centerlines.subgraphs_nodes, centerlines.subgraphs_adj, centerlines.subgraphs_points_in_between_nodes, self.n_control)  # subgraph dfs already
+        graph_nodes, graph_betweens = scene_graph.sequelize_new(orderedDFS=self.order)
+        vert_sentence, edge_sentence = nodesbetween2seq(graph_nodes, 
+                                                        graph_betweens, 
+                                                        centerlines.pc_range, 
+                                                        centerlines.dx, 
+                                                        centerlines.bz_pc_range, 
+                                                        centerlines.bz_nx, 
+                                                        self.vertex_id_start, 
+                                                        self.connect_start, 
+                                                        self.coeff_start)
+        vert_sentence = np.array(vert_sentence)
+        edge_sentence = np.array(edge_sentence)
+
+        results['vert_sentence'] = vert_sentence
+        results['edge_sentence'] = edge_sentence
         results['n_control'] = self.n_control
 
         # # visulization
@@ -1442,7 +1499,7 @@ class LoadRoadSegmentation(object):
         self.ego_points = ego_points
 
         layer_dict=dict()
-        for location in nusc_utils.LOCATIONS:
+        for location in LOCATIONS:
             layer_dict[location] = dict()
         for location in layer_dict:
             for layer_name in layer_names:
