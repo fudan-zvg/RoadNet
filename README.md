@@ -8,6 +8,8 @@
 > Renyuan Peng, Xinyue Cai, Hang Xu, Jiachen Lu, Feng Wen, Wei Zhang, [Li Zhang](https://lzrobots.github.io)  
 > **Fudan University, Huawei Noah’s Ark Lab**
 
+![intro-fig](src/intro-fig-fig.jpg)
+
 ## Get Started
 Please checkout for [get_started.md](get_started.md)
 ## Training
@@ -36,7 +38,6 @@ We thank numerous excellent works and open-source codebases:
   booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
   pages={23--33},
   year={2023}
-}
 }
 ```
 
