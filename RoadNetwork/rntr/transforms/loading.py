@@ -2,6 +2,7 @@
 # Copyright (c) 2022 megvii-model. All Rights Reserved.
 # ------------------------------------------------------------------------
 import mmcv
+import mmengine
 import numpy as np
 import os
 import torch
@@ -14,8 +15,8 @@ from mmdet.datasets.transforms import LoadAnnotations
 from .depth_map_utils import fill_in_multiscale
 
 from .centerline_utils import SceneGraph, sentance2seq, sentance2bzseq, sentance2bzseq2, nodesbetween2seq
-from projects.RNTR.rntr.core.centerline import PryCenterLine, PryOrederedCenterLine, OrderedSceneGraph, PryOrederedBzCenterLine, OrderedBzLaneGraph, OrderedBzSceneGraph, OrderedBzPlSceneGraph, PryOrederedBzPlCenterLine, get_semiAR_seq, match_keypoints, float2int, get_semiAR_seq_fromInt, PryMonoOrederedBzCenterLine, PryMonoOrederedBzPlCenterLine, AV2OrederedBzCenterLine, AV2OrderedBzSceneGraph, AV2OrderedBzLaneGraph, AV2OrederedBzCenterLine_new, AV2OrderedBzSceneGraph_new, NusClearOrederedBzCenterLine, Laneseq2Graph
-from projects.RNTR.rntr.core.centerline import seq2nodelist, EvalMapGraph, seq2bznodelist, EvalMapBzGraph, EvalMapBzPlGraph, convert_coeff_coord, seq2bzplnodelist, convert_plcoeff_coord
+from projects.RoadNetwork.rntr.core.centerline import PryCenterLine, PryOrederedCenterLine, OrderedSceneGraph, PryOrederedBzCenterLine, OrderedBzLaneGraph, OrderedBzSceneGraph, OrderedBzPlSceneGraph, PryOrederedBzPlCenterLine, get_semiAR_seq, match_keypoints, float2int, get_semiAR_seq_fromInt, PryMonoOrederedBzCenterLine, PryMonoOrederedBzPlCenterLine, AV2OrederedBzCenterLine, AV2OrderedBzSceneGraph, AV2OrderedBzLaneGraph, AV2OrederedBzCenterLine_new, AV2OrderedBzSceneGraph_new, NusClearOrederedBzCenterLine, Laneseq2Graph
+from projects.RoadNetwork.rntr.core.centerline import seq2nodelist, EvalMapGraph, seq2bznodelist, EvalMapBzGraph, EvalMapBzPlGraph, convert_coeff_coord, seq2bzplnodelist, convert_plcoeff_coord
 
 LOCATIONS = ['boston-seaport', 'singapore-onenorth', 'singapore-queenstown',
              'singapore-hollandvillage']
@@ -1455,15 +1456,17 @@ class LoadCenterlineSegFromPkl(object):
             inbev_x = np.logical_and(center_line[:,0] < self.pc_range[3], center_line[:,0] >= self.pc_range[0])
             inbev_y = np.logical_and(center_line[:,1] < self.pc_range[4], center_line[:,1] >= self.pc_range[1])
             inbev_xy = np.logical_and(inbev_x, inbev_y)
+            if not max(inbev_xy):
+                continue
             center_line = (center_line[inbev_xy, :] - self.pc_range[:3]) / self.dx
-            center_line = np.floor(center_line).astype(np.int)
+            center_line = np.floor(center_line).astype(np.int32)
             for pt_i in range(len(center_line)-1):
                 cv2.line(centerline_seg, tuple(center_line[pt_i, :2]), tuple(center_line[pt_i+1, :2]), self.line, self.thickness)
         if self.data_root:
             filename = os.path.join(self.data_root, results['sample_idx'] + '.png')
             cv2.imwrite(filename, centerline_seg)
         centerline_seg[centerline_seg==self.line] = 1
-        results['middle_seg'] = centerline_seg.astype(np.int64)
+        results['center_seg'] = centerline_seg.astype(np.int64)
         return results
     
     @staticmethod
@@ -1503,7 +1506,7 @@ class LoadRoadSegmentation(object):
             layer_dict[location] = dict()
         for location in layer_dict:
             for layer_name in layer_names:
-                mask = mmcv.load(os.path.join(data_root, layer_name, location+'.pkl'))
+                mask = mmengine.load(os.path.join(data_root, layer_name, location+'.pkl'))
                 layer_dict[location][layer_name] = mask
         self.layer_dict = layer_dict
 

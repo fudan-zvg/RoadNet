@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 from os import path as osp
 from typing import Callable, List, Union
 
@@ -9,6 +10,7 @@ from mmdet3d.structures import LiDARInstance3DBoxes
 from mmdet3d.structures.bbox_3d.cam_box3d import CameraInstance3DBoxes
 from mmdet3d.datasets.nuscenes_dataset import NuScenesDataset
 from mmengine.dataset import BaseDataset
+from mmengine.fileio import join_path, list_from_file, load
 
 
 @DATASETS.register_module()
@@ -61,13 +63,105 @@ class CenterlineNuScenesDataset(BaseDataset):
             data_root=data_root,
             pipeline=pipeline,
             test_mode=test_mode,
+            lazy_init=True,
             **kwargs)
+        self.full_init()
+        
         self.grid_conf = grid_conf
         self.bz_grid_conf = bz_grid_conf
         self.interval = grid_conf['xbound'][-1]
         self.landmark_thresholds = landmark_thresholds
         self.reach_thresholds = reach_thresholds
         self.pkl = ann_file
+
+    def full_init(self):
+        """Load annotation file and set ``BaseDataset._fully_initialized`` to
+        True.
+
+        If ``lazy_init=False``, ``full_init`` will be called during the
+        instantiation and ``self._fully_initialized`` will be set to True. If
+        ``obj._fully_initialized=False``, the class method decorated by
+        ``force_full_init`` will call ``full_init`` automatically.
+
+        Several steps to initialize annotation:
+
+            - load_data_list: Load annotations from annotation file.
+            - filter data information: Filter annotations according to
+              filter_cfg.
+            - slice_data: Slice dataset according to ``self._indices``
+            - serialize_data: Serialize ``self.data_list`` if
+              ``self.serialize_data`` is True.
+        """
+        if self._fully_initialized:
+            return
+        # load data information
+        self.data_list = self.load_data_list()
+        # filter illegal data, such as data that has no annotations.
+        self.data_list = self.filter_data()
+        # Get subset data according to indices.
+        if self._indices is not None:
+            self.data_list = self._get_unserialized_subset(self._indices)
+
+        # serialize data_list
+        if self.serialize_data:
+            self.data_bytes, self.data_address = self._serialize_data()
+
+        self._fully_initialized = True
+
+    def load_data_list(self) -> List[dict]:
+        """Load annotations from an annotation file named as ``self.ann_file``
+
+        If the annotation file does not follow `OpenMMLab 2.0 format dataset
+        <https://mmengine.readthedocs.io/en/latest/advanced_tutorials/basedataset.html>`_ .
+        The subclass must override this method for load annotations. The meta
+        information of annotation file will be overwritten :attr:`METAINFO`
+        and ``metainfo`` argument of constructor.
+
+        Returns:
+            list[dict]: A list of annotation.
+        """  # noqa: E501
+        # `self.ann_file` denotes the absolute annotation file path if
+        # `self.root=None` or relative path if `self.root=/path/to/data/`.
+        annotations = load(self.ann_file)
+        if not isinstance(annotations, dict):
+            raise TypeError(f'The annotations loaded from annotation file '
+                            f'should be a dict, but got {type(annotations)}!')
+        if 'infos' not in annotations or 'metadata' not in annotations:
+            raise ValueError('Annotation must have infos and metadata '
+                             'keys')
+        metainfo = annotations['metadata']
+        raw_data_list = annotations['infos']
+
+        # Meta information load from annotation file will not influence the
+        # existed meta information load from `BaseDataset.METAINFO` and
+        # `metainfo` arguments defined in constructor.
+        for k, v in metainfo.items():
+            self._metainfo.setdefault(k, v)
+
+        # load and parse data_infos.
+        data_list = []
+        for raw_data_info in raw_data_list:
+            # parse raw data information to target format
+            data_info = self.parse_data_info(raw_data_info)
+            if isinstance(data_info, dict):
+                # For image tasks, `data_info` should information if single
+                # image, such as dict(img_path='xxx', width=360, ...)
+                data_list.append(data_info)
+            elif isinstance(data_info, list):
+                # For video tasks, `data_info` could contain image
+                # information of multiple frames, such as
+                # [dict(video_path='xxx', timestamps=...),
+                #  dict(video_path='xxx', timestamps=...)]
+                for item in data_info:
+                    if not isinstance(item, dict):
+                        raise TypeError('data_info must be list of dict, but '
+                                        f'got {type(item)}')
+                data_list.extend(data_info)
+            else:
+                raise TypeError('data_info should be a dict or list of dict, '
+                                f'but got {type(data_info)}')
+
+        return data_list
 
     def parse_ann_info(self, info: dict) -> dict:
         """Get annotation info according to the given index.
@@ -190,13 +284,6 @@ class CenterlineNuScenesDataset(BaseDataset):
                     extrinsics=extrinsics 
                 ))
 
-        # if not self.test_mode:
-        #     annos = self.parse_ann_info(info)
-        #     input_dict['ann_info'] = annos
-        # gt_lines = info['lines']
-        # input_dict['gt_lines_coord'] = gt_lines['boxes']
-        # input_dict['gt_lines_label'] = gt_lines['labels']
         if 'center_lines' in info.keys():
             input_dict['center_lines'] = info['center_lines']
-        # input_dict['raw_center_lines'] = PryCenterLine(info['center_lines'])
         return input_dict

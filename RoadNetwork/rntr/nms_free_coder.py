@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from mmdet.models.task_modules import BaseBBoxCoder
 
 from mmdet3d.registry import TASK_UTILS
-from projects.RNTR.rntr.utils import denormalize_bbox
+from projects.RoadNetwork.rntr.utils import denormalize_bbox
 
 
 @TASK_UTILS.register_module()

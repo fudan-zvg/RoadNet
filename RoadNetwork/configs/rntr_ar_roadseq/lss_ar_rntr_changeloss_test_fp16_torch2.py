@@ -4,7 +4,7 @@ _base_ = [
     '../../../../configs/_base_/schedules/cyclic-20e.py'
 ]
 
-custom_imports = dict(imports=['projects.RNTR.rntr'])
+custom_imports = dict(imports=['projects.RoadNetwork.rntr'])
 randomness = dict(seed=1, deterministic=False, diff_rank_seed=False)
 
 transformer_dims=256
