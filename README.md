@@ -12,6 +12,14 @@
 
 ## Get Started
 Please checkout for [get_started.md](get_started.md)
+## Pre-training
+```
+./tools/dist_train.sh RoadNetwork/configs/road_seg/lss_roadseg_48x32_b4x8_resnet_adam_24e.py 8
+```
+Move the final checkpoint to `ckpts/`
+```
+cp work_dirs/lss_roadseg_48x32_b4x8_resnet_adam_24e/latest.pth ckpts/lss_roadseg_48x32_b4x8_resnet_adam_24e.pth
+```
 ## Training
 For ICCV: Translating Images to Road Network: A Non-Autoregressive Sequence-to-Sequence Approach
 ```

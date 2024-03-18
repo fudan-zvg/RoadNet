@@ -42,3 +42,7 @@ cp -r RoadNet/RoadNetwork/ mmdetection3d/projects/
 ```
 ## Data Preparation
 Please refer to nuScenes for initial preparation
+Run the following code to generate `.pkl` file.
+```
+python RoadNetwork/tools/create_data_pon_centerline.py nuscenes
+```
