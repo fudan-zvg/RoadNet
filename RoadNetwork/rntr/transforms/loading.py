@@ -11,7 +11,9 @@ import math
 import cv2
 from mmdet3d.registry import TRANSFORMS
 from einops import rearrange
+from typing import List, Optional, Union
 from mmdet.datasets.transforms import LoadAnnotations
+from mmengine.fileio import get
 from .depth_map_utils import fill_in_multiscale
 
 from .centerline_utils import SceneGraph, sentance2seq, sentance2bzseq, sentance2bzseq2, nodesbetween2seq
@@ -33,9 +35,12 @@ class OrgLoadMultiViewImageFromFiles(object):
         color_type (str): Color type of the file. Defaults to 'unchanged'.
     """
 
-    def __init__(self, to_float32=False, color_type='unchanged'):
+    def __init__(self, to_float32=False, 
+                 color_type='unchanged',
+                 backend_args: Optional[dict] = None,):
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.backend_args = backend_args
 
     def __call__(self, results):
         """Call function to load multi-view image from files.
@@ -57,8 +62,14 @@ class OrgLoadMultiViewImageFromFiles(object):
         """
         filename = results['img_filename']
         # img is of shape (h, w, c, num_views)
-        img = np.stack(
-            [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
+        img_bytes = [
+            get(name, backend_args=self.backend_args) for name in filename
+        ]
+        img = [
+            mmcv.imfrombytes(img_byte, flag=self.color_type)
+            for img_byte in img_bytes
+        ]
+        img = np.stack(img, axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
