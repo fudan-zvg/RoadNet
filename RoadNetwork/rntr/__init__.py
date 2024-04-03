@@ -22,6 +22,7 @@ from .transforms import *
 from .ar_lanegraph2seq import AR_LG2Seq
 from .ar_lanegraph2seq_head import ARLanegraph2seqHead
 from .data import nuscenes_converter_pon_centerline
+from .nus_reach_metric import NuScenesReachMetric
 
 __all__ = [
     'AR_RNTR', 'RoadSeg', 'RoadSegHead',
@@ -40,5 +41,5 @@ __all__ = [
     'PETRKeypointTransformer', 'PETRTransformer', 'PETRDNTransformer', 'PETRMultiheadAttention', 
     'PETRTransformerEncoder', 'PETRTransformerDecoder', 'RNTRMultiheadFlashAttention', 'LssSeqLineFlashTransformer', 
     'RNTRLineFlashTransformerDecoderLayer', 'RNTR2MultiheadAttention', 'AR_LG2Seq', 'ARLanegraph2seqHead', 
-    'nuscenes_converter_pon_centerline'
+    'nuscenes_converter_pon_centerline', 'NuScenesReachMetric'
 ]

@@ -415,7 +415,7 @@ class OrderedBzSceneGraph(object):
         return self.subgraph[idx]
 
 
-class PryOrederedBzCenterLine(object):
+class NusOrederedBzCenterLine(object):
     def __init__(self, centerlines, grid_conf, bz_grid_conf):
         self.types = copy.deepcopy(centerlines['type'])
         self.centerline_ids = copy.deepcopy(centerlines['centerline_ids'])

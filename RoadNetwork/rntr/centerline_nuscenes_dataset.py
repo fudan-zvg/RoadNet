@@ -234,10 +234,7 @@ class CenterlineNuScenesDataset(BaseDataset):
             pts_filename=info['lidar_path'],
             sweeps=info['sweeps'],
             timestamp=info['timestamp'] / 1e6,
-            # lidar2ego_translation=info['lidar2ego_translation'],
-            # lidar2ego_rotation=info['lidar2ego_rotation'],
-            # ego2global_translation=info['ego2global_translation'],
-            # ego2global_rotation=info['ego2global_rotation']
+            token=info['token'],
         )
         lidar2ego_r = Quaternion(info['lidar2ego_rotation']).rotation_matrix
         lidar2ego_t = info['lidar2ego_translation']

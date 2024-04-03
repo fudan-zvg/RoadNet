@@ -357,24 +357,6 @@ class AR_LG2Seq(MVXTwoStageDetector):
     def simple_test(self, img_metas, img=None, rescale=False):
         """Test function without augmentaiton."""
         bev_feats = self.extract_feat(img=img, img_metas=img_metas)
-        # b, c, h, w = bev_feats.shape
-        # bev_feats = F.interpolate(bev_feats, (int(h * 0.5), int(w * 0.5)))
-        
-        # import cv2
-        # bs = bev_feats.shape[0]
-        # save_dir = f"vis/lssego_pryordcoeffsequence_l6_256_2x8_cos_wc0d2_300e_aug_50v_v3_300_bevfeature/"
-        # if not os.path.exists(save_dir):
-        #     os.mkdir(save_dir)
-        # for bi in range(bs):
-        #     name = img_metas[bi]['filename'][0].split('/')[-1].split('.jpg')[0]
-        #     token = img_metas[bi]['sample_idx']
-        #     bev_feat_draw = bev_feats[bi].mean(dim=0)
-        #     bev_feat_draw = bev_feat_draw.detach().cpu().numpy()
-        #     bev_feat_draw = (bev_feat_draw - bev_feat_draw.min()) / (bev_feat_draw.max() - bev_feat_draw.min())
-        #     bev_feat_draw = (bev_feat_draw * 255).astype(np.uint8)
-        #     bev_feat_draw = cv2.applyColorMap(bev_feat_draw, cv2.COLORMAP_JET)
-        #     cv2.imwrite(os.path.join(save_dir, f"{name}_{token}_bev.png"), bev_feat_draw)
-        # import pdb;pdb.set_trace()
         
 
         bbox_list = [dict() for i in range(len(img_metas))]

@@ -17,7 +17,7 @@ from mmengine.fileio import get
 from .depth_map_utils import fill_in_multiscale
 
 from .centerline_utils import SceneGraph, sentance2seq, sentance2bzseq, sentance2bzseq2, nodesbetween2seq
-from projects.RoadNetwork.rntr.core.centerline import PryCenterLine, PryOrederedCenterLine, OrderedSceneGraph, PryOrederedBzCenterLine, OrderedBzLaneGraph, OrderedBzSceneGraph, OrderedBzPlSceneGraph, PryOrederedBzPlCenterLine, get_semiAR_seq, match_keypoints, float2int, get_semiAR_seq_fromInt, PryMonoOrederedBzCenterLine, PryMonoOrederedBzPlCenterLine, AV2OrederedBzCenterLine, AV2OrderedBzSceneGraph, AV2OrderedBzLaneGraph, AV2OrederedBzCenterLine_new, AV2OrderedBzSceneGraph_new, NusClearOrederedBzCenterLine, Laneseq2Graph
+from projects.RoadNetwork.rntr.core.centerline import PryCenterLine, PryOrederedCenterLine, OrderedSceneGraph, NusOrederedBzCenterLine, OrderedBzLaneGraph, OrderedBzSceneGraph, OrderedBzPlSceneGraph, PryOrederedBzPlCenterLine, get_semiAR_seq, match_keypoints, float2int, get_semiAR_seq_fromInt, PryMonoOrederedBzCenterLine, PryMonoOrederedBzPlCenterLine, AV2OrederedBzCenterLine, AV2OrderedBzSceneGraph, AV2OrderedBzLaneGraph, AV2OrederedBzCenterLine_new, AV2OrderedBzSceneGraph_new, NusOrederedBzCenterLine, NusClearOrederedBzCenterLine, Laneseq2Graph
 from projects.RoadNetwork.rntr.core.centerline import seq2nodelist, EvalMapGraph, seq2bznodelist, EvalMapBzGraph, EvalMapBzPlGraph, convert_coeff_coord, seq2bzplnodelist, convert_plcoeff_coord
 
 LOCATIONS = ['boston-seaport', 'singapore-onenorth', 'singapore-queenstown',
@@ -233,7 +233,7 @@ class LoadMonoCenterlineSegFromPkl(object):
             for pt_i in range(len(center_line)-1):
                 cv2.line(centerline_seg, tuple(center_line[pt_i, :2]), tuple(center_line[pt_i+1, :2]), self.line, self.thickness)
         if self.data_root:
-            filename = os.path.join(self.data_root, results['sample_idx'] + '.png')
+            filename = os.path.join(self.data_root, results['token'] + '.png')
             cv2.imwrite(filename, centerline_seg)
         centerline_seg[centerline_seg==self.line] = 1
         results['middle_seg'] = centerline_seg.astype(np.int64)
@@ -981,7 +981,7 @@ class LoadPryOrderedCenterline(object):
 
 
 @TRANSFORMS.register_module()
-class LoadPryOrderedBzCenterline(object):
+class LoadNusOrderedBzCenterline(object):
     """Load multi channel images from a list of separate channel files.
 
     Expects results['img_filename'] to be a list of filenames.
@@ -993,7 +993,7 @@ class LoadPryOrderedBzCenterline(object):
     def __call__(self, results):
         """Call function to load multi-view image from files.
         """
-        results['center_lines'] = PryOrederedBzCenterLine(results['center_lines'], self.grid_conf, self.bz_grid_conf)
+        results['center_lines'] = NusOrederedBzCenterLine(results['center_lines'], self.grid_conf, self.bz_grid_conf)
         return results
 
     def __repr__(self):
@@ -1064,7 +1064,7 @@ class LoadPryOrderedBzCenterlineFromFiles(object):
         """
         token_name = results['sample_idx']+'.pkl'
         center_lines = mmcv.load(os.path.join(self.data_root, token_name))
-        results['center_lines'] = PryOrederedBzCenterLine(center_lines, self.grid_conf, self.bz_grid_conf)
+        results['center_lines'] = NusClearOrederedBzCenterLine(center_lines, self.grid_conf, self.bz_grid_conf)
         return results
 
     def __repr__(self):

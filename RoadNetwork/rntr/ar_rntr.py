@@ -268,85 +268,38 @@ class AR_RNTR(MVXTwoStageDetector):
                                             img_metas, num_coeff)
         losses.update(losses_pts)
         return losses
-        
-
-    def forward_test(self, img_metas, img=None, **kwargs):
-        for var, name in [(img_metas, 'img_metas')]:
-            if not isinstance(var, list):
-                raise TypeError('{} must be a list, but got {}'.format(
-                    name, type(var)))
-        img = [img] if img is None else img
-        return self.simple_test(img_metas[0], img[0], **kwargs)
-
-    def vis_linepts(self, pred_points, pred_labels, img_meta, path, aux_name):
-        import cv2
-        
-        # label_color = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
-        #        [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
-        #        [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
-        #        [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
-        #        [0, 80, 100], [0, 0, 230], [119, 11, 32]]
-        label_color = [[255, 0, 0], [0, 0, 230], [35, 244, 232], [70, 70, 70], [102, 102, 156],
-               [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
-               [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
-               [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
-               [0, 80, 100],  [119, 11, 32]]
-        bev_img = np.zeros((200, 200, 3), np.uint8)
-        for i in range(len(pred_points)):
-            try:
-                bev_img = cv2.circle(bev_img, (int(pred_points[i][0]), int(pred_points[i][1])), 1, label_color[int(pred_labels[i])], 2)
-            except:
-                pass
-        # for i in range(len(pred_points) // 3):
-        #     pt1 = (int(pred_points[i * 3][0]), int(pred_points[i * 3][1]))
-        #     pt2 = (int(pred_points[i * 3 + 1][0]), int(pred_points[i * 3 + 1][1]))
-        #     pt3 = (int(pred_points[i * 3 + 2][0]), int(pred_points[i * 3 + 2][1]))
-        #     bev_img = cv2.line(bev_img, pt1, pt2, (0, 255, 0), 1)
-        #     bev_img = cv2.line(bev_img, pt2, pt3, (0, 255, 0), 1)
-        name = img_meta['filename'][0].split('/')[-1].split('.jpg')[0]
-        save_dir = f"vis/{path}/"
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        cv2.imwrite(os.path.join(save_dir, f"{name}_{aux_name}.png"), bev_img)
-        return
     
-    def vis_from_nodelist(self, nodelist, img_meta, path, aux_name):
-        Map_size = [(-50, 50), (-50, 50)]
-        Map_resolution = 0.5
-        image = np.zeros([200, 200, 3])
-        point_color_map = {"start": (0, 0, 255), 'fork': (0, 255, 0), "continue": (0, 255, 255), "merge": (255, 0, 0)}
+    def predict(self, batch_inputs_dict, batch_data_samples, **kwargs):
+        """Forward of testing.
 
-        for idx, node in enumerate(nodelist):
-            if node['sque_type'] == 'start':
-                cv2.circle(image, node['coord'], 1, color=point_color_map['start'], thickness=2)
-            elif node['sque_type'] == 'continue':
-                cv2.circle(image, node['coord'], 1, color=point_color_map['continue'], thickness=2)
-                # cv2.polylines(image, [subgraphs_points_in_between_nodes[(node.sque_index-1, node.sque_index)]], False, color=point_color_map['continue'], thickness=1)
-                cv2.arrowedLine(image, nodelist[idx - 1]['coord'], node['coord'], color=point_color_map['continue'],
-                                thickness=1, tipLength=0.1)
-            elif node['sque_type'] == 'fork':
-                if node['fork_from'] > idx or node['fork_from'] < 0:
-                    continue
-                cv2.circle(image, node['coord'], 1, color=point_color_map['fork'], thickness=2)
-                cv2.arrowedLine(image, nodelist[node['fork_from'] - 1]['coord'], node['coord'],
-                                color=point_color_map['fork'],
-                                thickness=1, tipLength=0.1)
-            elif node['sque_type'] == 'merge':
-                if node['merge_with'] > idx or node['merge_with'] < 0:
-                    continue
-                cv2.circle(image, node['coord'], 1, color=point_color_map['merge'], thickness=2)
-                cv2.arrowedLine(image, nodelist[node['merge_with'] - 1]['coord'], node['coord'],
-                                color=point_color_map['merge'], thickness=1, tipLength=0.1)
+        Args:
+            batch_inputs_dict (dict): The model input dict which include
+                'points' keys.
 
-        name = img_meta['filename'][0].split('/')[-1].split('.jpg')[0]
-        save_dir = f"vis/{path}/"
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        cv2.imwrite(os.path.join(save_dir, f"{name}_{aux_name}.png"), image)
+                - points (list[torch.Tensor]): Point cloud of each sample.
+            batch_data_samples (List[:obj:`Det3DDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance_3d`.
 
-    def simple_test_pts(self, pts_feats, img_metas, rescale=False):
+        Returns:
+            list[:obj:`Det3DDataSample`]: Detection results of the
+            input sample. Each Det3DDataSample usually contain
+            'pred_instances_3d'. And the ``pred_instances_3d`` usually
+            contains following keys.
+
+            - scores_3d (Tensor): Classification scores, has a shape
+                (num_instances, )
+            - labels_3d (Tensor): Labels of bboxes, has a shape
+                (num_instances, ).
+            - bbox_3d (:obj:`BaseInstance3DBoxes`): Prediction of bboxes,
+                contains a tensor with shape (num_instances, 7).
+        """
+        batch_input_metas = [item.metainfo for item in batch_data_samples]
+        batch_input_imgs = batch_inputs_dict['img']
+        return self.simple_test(batch_input_metas[:1], batch_input_imgs[:1])
+
+    def simple_test_pts(self, pts_feats, img_metas):
         """Test function of point cloud branch."""
-        gt_lines_seqs = [img_meta['centerline_sequence'] for img_meta in img_metas]
         n_control = img_metas[0]['n_control']
         num_coeff = n_control - 2
         clause_length = 4 + num_coeff * 2
@@ -358,7 +311,6 @@ class AR_RNTR(MVXTwoStageDetector):
         output_seqs, values = outs
         line_results = []
         for bi in range(output_seqs.shape[0]):
-            # gt_node_list = self.seq2nodelist(gt_lines_seqs[bi])
             pred_line_seq = output_seqs[bi]
             pred_line_seq = pred_line_seq[1:]
             if self.end in pred_line_seq:
@@ -373,68 +325,19 @@ class AR_RNTR(MVXTwoStageDetector):
                 pred_line_seq[k::clause_length] = pred_line_seq[k::clause_length] - self.coeff_start
             pred_node_list = av2seq2bznodelist(pred_line_seq.detach().cpu().numpy(), n_control, self.epsilon)
 
-            # if self.vis_cfg is not None:
-            #     self.vis_from_nodelist(gt_node_list, img_metas[bi], self.vis_cfg['path'], 'gt')
-            #     self.vis_from_nodelist(pred_node_list, img_metas[bi], self.vis_cfg['path'], 'pred')
-
             line_results.append(dict(
                 line_seqs = pred_line_seq.detach().cpu(),
                 pred_node_lists = pred_node_list
             ))
         return line_results
 
-    def simple_test(self, img_metas, img=None, rescale=False):
+    def simple_test(self, img_metas, img=None):
         """Test function without augmentaiton."""
         bev_feats = self.extract_feat(img=img, img_metas=img_metas)
-        # b, c, h, w = bev_feats.shape
-        # bev_feats = F.interpolate(bev_feats, (int(h * 0.5), int(w * 0.5)))
-        
-        # import cv2
-        # bs = bev_feats.shape[0]
-        # save_dir = f"vis/lssego_pryordcoeffsequence_l6_256_2x8_cos_wc0d2_300e_aug_50v_v3_300_bevfeature/"
-        # if not os.path.exists(save_dir):
-        #     os.mkdir(save_dir)
-        # for bi in range(bs):
-        #     name = img_metas[bi]['filename'][0].split('/')[-1].split('.jpg')[0]
-        #     token = img_metas[bi]['sample_idx']
-        #     bev_feat_draw = bev_feats[bi].mean(dim=0)
-        #     bev_feat_draw = bev_feat_draw.detach().cpu().numpy()
-        #     bev_feat_draw = (bev_feat_draw - bev_feat_draw.min()) / (bev_feat_draw.max() - bev_feat_draw.min())
-        #     bev_feat_draw = (bev_feat_draw * 255).astype(np.uint8)
-        #     bev_feat_draw = cv2.applyColorMap(bev_feat_draw, cv2.COLORMAP_JET)
-        #     cv2.imwrite(os.path.join(save_dir, f"{name}_{token}_bev.png"), bev_feat_draw)
-        # import pdb;pdb.set_trace()
-        
-
         bbox_list = [dict() for i in range(len(img_metas))]
         line_results = self.simple_test_pts(
-            bev_feats, img_metas, rescale=rescale)
-        for result_dict, line_result in zip(bbox_list, line_results):
+            bev_feats, img_metas)
+        for result_dict, line_result, img_meta in zip(bbox_list, line_results, img_metas):
             result_dict['line_results'] = line_result
-        return bbox_list
-
-    def aug_test_pts(self, feats, img_metas, rescale=False):
-        feats_list = []
-        for j in range(len(feats[0])):
-            feats_list_level = []
-            for i in range(len(feats)):
-                feats_list_level.append(feats[i][j])
-            feats_list.append(torch.stack(feats_list_level, -1).mean(-1))
-        outs = self.pts_bbox_head(feats_list, img_metas)
-        bbox_list = self.pts_bbox_head.get_bboxes(
-            outs, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox3d2result(bboxes, scores, labels)
-            for bboxes, scores, labels in bbox_list
-        ]
-        return bbox_results
-
-    def aug_test(self, img_metas, imgs=None, rescale=False):
-        """Test function with augmentaiton."""
-        img_feats = self.extract_feats(img_metas, imgs)
-        img_metas = img_metas[0]
-        bbox_list = [dict() for i in range(len(img_metas))]
-        bbox_pts = self.aug_test_pts(img_feats, img_metas, rescale)
-        for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
-            result_dict['pts_bbox'] = pts_bbox
+            result_dict['token'] = img_meta['token']
         return bbox_list

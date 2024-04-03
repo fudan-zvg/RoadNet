@@ -162,53 +162,21 @@ backend_args = None
 
 db_sampler = dict(
     data_root=data_root,
-    info_path=data_root + 'nuscenes_centerline_infos_pon_train.pkl',
-    rate=1.0,
-    prepare=dict(
-        filter_by_difficulty=[-1],
-        filter_by_min_points=dict(
-            car=5,
-            truck=5,
-            bus=5,
-            trailer=5,
-            construction_vehicle=5,
-            traffic_cone=5,
-            barrier=5,
-            motorcycle=5,
-            bicycle=5,
-            pedestrian=5)),
-    classes=class_names,
-    sample_groups=dict(
-        car=2,
-        truck=3,
-        construction_vehicle=7,
-        bus=4,
-        trailer=6,
-        barrier=2,
-        motorcycle=6,
-        bicycle=6,
-        pedestrian=2,
-        traffic_cone=2),
-    points_loader=dict(
-        type='LoadPointsFromFile',
-        coord_type='LIDAR',
-        load_dim=5,
-        use_dim=[0, 1, 2, 3, 4],
-        backend_args=backend_args),
-    backend_args=backend_args)
+    info_path=data_root + 'nuscenes_prycenterline_pon_split_infos_train.pkl',
+    rate=1.0)
 
 train_pipeline = [
     dict(type='OrgLoadMultiViewImageFromFiles', to_float32=True),
     dict(type='ResizeCropFlipImage', data_aug_conf=ida_aug_conf, training=True),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PadMultiViewImage', size_divisor=32),
-    dict(type='LoadNusClearOrderedBzCenterline', grid_conf=grid_conf, bz_grid_conf=bz_grid_conf, clear=True),
+    dict(type='LoadNusOrderedBzCenterline', grid_conf=grid_conf, bz_grid_conf=bz_grid_conf),
     dict(type='CenterlineFlip', prob=0.5),
     dict(type='CenterlineRotateScale', prob=0.5, max_rotate_degree=22.5, scaling_ratio_range=(0.95, 1.05)),
     dict(type='TransformOrderedBzLane2Graph', n_control=3, orderedDFS=True),
     dict(type='Pack3DDetInputs', 
          keys=['img'], 
-         meta_keys=('filename', 'ori_shape', 'img_shape', 'lidar2img', 'intrinsics', 'extrinsics',
+         meta_keys=('filename', 'token', 'ori_shape', 'img_shape', 'lidar2img', 'intrinsics', 'extrinsics',
                 'pad_shape', 'scale_factor', 'flip', 'box_mode_3d', 'box_type_3d',
                 'img_norm_cfg', 'sample_idx', 'timestamp', 'centerline_coord', 'centerline_label', 
                 'centerline_connect', 'centerline_coeff', 'centerline_sequence', 'lidar2ego', 'n_control')),
@@ -218,10 +186,10 @@ test_pipeline = [
     dict(type='ResizeCropFlipImage', data_aug_conf = ida_aug_conf, training=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PadMultiViewImage', size_divisor=32),
-    dict(type='LoadNusClearOrderedBzCenterline', grid_conf=grid_conf, bz_grid_conf=bz_grid_conf, clear=True),
+    dict(type='LoadNusOrderedBzCenterline', grid_conf=grid_conf, bz_grid_conf=bz_grid_conf),
     dict(type='TransformOrderedBzLane2Graph', n_control=3, orderedDFS=True),
     dict(type='Pack3DDetInputs', keys=['img'], 
-         meta_keys=('filename', 'ori_shape', 'img_shape', 'lidar2img', 'intrinsics', 'extrinsics',
+         meta_keys=('filename', 'token', 'ori_shape', 'img_shape', 'lidar2img', 'intrinsics', 'extrinsics',
                 'pad_shape', 'scale_factor', 'flip', 'box_mode_3d', 'box_type_3d',
                 'img_norm_cfg', 'sample_idx', 'timestamp', 'centerline_coord', 'centerline_label', 
                 'centerline_connect', 'centerline_coeff', 'centerline_sequence', 'lidar2ego', 'n_control'))
@@ -229,7 +197,7 @@ test_pipeline = [
 
 train_dataloader = dict(
     batch_size=2,
-    num_workers=1,  # 4
+    num_workers=4,  # 4
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -323,10 +291,26 @@ lr_config = dict(
     min_lr_ratio=1e-3,
     )
 
+val_evaluator = dict(
+    type='NuScenesReachMetric',
+    data_root=data_root,
+    ann_file=data_root + 'nuscenes_prycenterline_pon_split_infos_val_mini.pkl',
+    metric='ar_reach',
+    backend_args=backend_args, 
+    grid_conf=grid_conf,
+    bz_grid_conf=bz_grid_conf,
+    )
+test_evaluator = val_evaluator
 
-train_cfg = dict(max_epochs=num_epochs, val_interval=301)
+train_cfg = dict(max_epochs=num_epochs, val_interval=50)
 
 find_unused_parameters=False #### when use checkpoint, find_unused_parameters must be False
 checkpoint_config = dict(interval=1, max_keep_ckpts=10)
 
-
+default_hooks = dict(
+    timer=dict(type='IterTimerHook'),
+    logger=dict(type='LoggerHook', interval=1),
+    param_scheduler=dict(type='ParamSchedulerHook'),
+    checkpoint=dict(type='CheckpointHook', interval=10),
+    sampler_seed=dict(type='DistSamplerSeedHook'),
+    visualization=dict(type='Det3DVisualizationHook'))
