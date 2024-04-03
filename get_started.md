@@ -44,5 +44,11 @@ cp -r RoadNet/RoadNetwork/ mmdetection3d/projects/
 Please refer to nuScenes for initial preparation
 Run the following code to generate `.pkl` file.
 ```
-python RoadNetwork/tools/create_data_pon_centerline.py nuscenes
+python projects/RoadNetwork/tools/create_data_pon_centerline.py nuscenes
 ```
+
+## Checkpoint Preparation
+```
+mkdir ckpts
+```
+Download ResNet-50 Deeplab-V3-Plus [checkpoint](https://download.openmmlab.com/mmsegmentation/v0.5/deeplabv3plus/deeplabv3plus_r50-d8_512x1024_80k_cityscapes/deeplabv3plus_r50-d8_512x1024_80k_cityscapes_20200606_114049-f9fb496d.pth) from MMSegmentation.

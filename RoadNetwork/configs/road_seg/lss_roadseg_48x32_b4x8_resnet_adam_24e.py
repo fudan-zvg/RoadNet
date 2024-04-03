@@ -7,6 +7,7 @@ _base_ = [
 custom_imports = dict(imports=['projects.RoadNetwork.rntr'])
 randomness = dict(seed=1, deterministic=False, diff_rank_seed=False)
 
+load_from='ckpts/deeplabv3plus_r50-d8_512x1024_80k_cityscapes_20200606_114049-f9fb496d.pth'
 transformer_dims=256
 transformer_layers=6
 head_dims=32
