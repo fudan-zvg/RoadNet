@@ -162,7 +162,7 @@ backend_args = None
 
 db_sampler = dict(
     data_root=data_root,
-    info_path=data_root + 'nuscenes_prycenterline_pon_split_infos_train.pkl',
+    info_path=data_root + 'nuscenes_centerline_infos_pon_train.pkl',
     rate=1.0)
 
 train_pipeline = [
@@ -294,7 +294,7 @@ lr_config = dict(
 val_evaluator = dict(
     type='NuScenesReachMetric',
     data_root=data_root,
-    ann_file=data_root + 'nuscenes_prycenterline_pon_split_infos_val_mini.pkl',
+    ann_file=data_root + 'nuscenes_centerline_infos_pon_val.pkl',
     metric='ar_reach',
     backend_args=backend_args, 
     grid_conf=grid_conf,
