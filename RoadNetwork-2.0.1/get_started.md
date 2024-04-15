@@ -38,7 +38,7 @@ Add our projects to mmdetection3d projects
 ```
 cd ${any path outside mmdetection3d}
 git clone git@github.com:fudan-zvg/RoadNet.git
-cp -r RoadNet/RoadNetwork/ mmdetection3d/projects/
+cp -r RoadNet/RoadNetwork-2.0.1/ mmdetection3d/projects/RoadNetwork/
 ```
 ## Data Preparation
 Please refer to nuScenes for initial preparation
