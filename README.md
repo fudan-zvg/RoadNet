@@ -1,5 +1,9 @@
 # Road Network and Lane Topology Extraction
 
+> **TPAMI 2025** [**Translating Images to Road Network: A Sequence-to-Sequence Perspective**](https://arxiv.org/abs/2402.08207),
+> Jiachen Lu, Ming Nie, Bozhou Zhang, Reyuan Peng, Xinyue Cai, Hang Xu, Feng Wen, Wei Zhang, [Li Zhang](https://lzrobots.github.io)
+> **Fudan University, Huawei Noah’s Ark Lab, Shanghai AI Lab**
+
 > **ICCV 2023 (Oral)** [**Translating Images to Road Network: A Non-Autoregressive Sequence-to-Sequence Approach**](https://arxiv.org/abs/2402.08207),
 > Jiachen Lu, Renyuan Peng, Xinyue Cai, Hang Xu, Hongyang Li, Feng Wen, Wei Zhang, [Li Zhang](https://lzrobots.github.io)
 > **Fudan University, Huawei Noah’s Ark Lab, Shanghai AI Lab**
@@ -85,11 +89,19 @@ We thank numerous excellent works and open-source codebases:
 ## 📜 BibTex
 
 ```bibtex
-@inproceedings{lu2023translating,
+@article{lu2023translating,
+  title={Translating Images to Road Network: A Sequence-to-Sequence Perspective},
+  author={Lu, Jiachen and Nie, Ming and Zhang, Bozhou and Peng, Renyuan and Cai, Xinyue and Xu, Hang and Li, Hongyang and Wen, Feng and Zhang, Wei and Zhang, Li},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI)},
+  year={2025}
+}
+```
+
+```bibtex
+@inproceedings{lu2025translating,
   title={Translating Images to Road Network: A Non-Autoregressive Sequence-to-Sequence Approach},
   author={Lu, Jiachen and Peng, Renyuan and Cai, Xinyue and Xu, Hang and Li, Hongyang and Wen, Feng and Zhang, Wei and Zhang, Li},
-  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
-  pages={23--33},
+  booktitle={IEEE/CVF International Conference on Computer Vision (ICCV)},
   year={2023}
 }
 ```
